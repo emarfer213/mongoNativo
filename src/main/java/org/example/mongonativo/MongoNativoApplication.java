@@ -1,52 +1,43 @@
 package org.example.mongonativo;
 
-import org.example.mongonativo.model.Cliente;
-import org.example.mongonativo.model.Videojuego;
-import org.example.mongonativo.repository.ClienteRepository;
-import org.example.mongonativo.repository.VentaRepository;
-import org.example.mongonativo.repository.VideojuegoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import org.bson.Document;
 
 import java.time.LocalDate;
-import java.util.Date;
+import java.util.Arrays;
 
-@SpringBootApplication
-public class MongoNativoApplication implements CommandLineRunner {
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Updates.*;
+import static com.mongodb.client.model.Projections.*;
 
-    @Autowired
-    private VideojuegoRepository repositorioJuegos;
-    @Autowired
-    private VentaRepository repositorioVentas;
-    @Autowired
-    private ClienteRepository repositorioClientes;
-
+public class MongoNativoApplication {
     public static void main(String[] args) {
-        SpringApplication.run(MongoNativoApplication.class, args);
-    }
 
-    @Override
-    public void run(String... args) throws Exception {
-        System.out.println("--- INICIANDO MONGO NATIVO ---");
+        String conectionString = "mongodb://localhost:27017";
 
-        repositorioJuegos.deleteAll();
-        repositorioClientes.deleteAll();
-        repositorioVentas.deleteAll();
+        try (MongoClient mongoClient = MongoClients.create(conectionString)) {
+            MongoDatabase database = mongoClient.getDatabase("tienda_gaming");
+            MongoCollection<Document> clientesCollection = database.getCollection("clientes");
+            MongoCollection<Document> juegosCollection = database.getCollection("videjuegos");
 
-        repositorioJuegos.save(new Videojuego("Zelda 1", "rpg", 35.75, 40));
-        repositorioJuegos.save(new Videojuego("Zelda 2", "rpg", 26.75, 2));
-        repositorioJuegos.save(new Videojuego("Zelda 3", "rpg", 10.75, 15));
-        repositorioJuegos.save(new Videojuego("Zelda 4", "rpg", 60.75, 31));
-        repositorioJuegos.save(new Videojuego("Zelda 5", "rpg", 70.75, 50));
+            //limpieza
+            clientesCollection.drop();
+            juegosCollection.drop();
 
-        repositorioClientes.save(new Cliente("juan", "correo1@gmail.com", LocalDate.now()));
-        repositorioClientes.save(new Cliente("ana", "correo1@gmail.com",  LocalDate.now()));
+            //insercion
+            Document cliente1 = new Document("nombre", "Ana").append("email", "email1@gmail.com").append("fecha_registro", LocalDate.now());
+            Document cliente2 = new Document("nombre", "Paco").append("email", "email2@gmail.com").append("fecha_registro", LocalDate.now());
 
-        System.out.println("--> Datos insertados <--");
+            Document juego1 = new Document("titulo", "juego1").append("genero", "accion").append("precio", 20.00).append("stock", 15);
+            Document juego2 = new Document("titulo", "juego2").append("genero", "accion").append("precio", 30.00).append("stock", 20);
+            Document juego3 = new Document("titulo", "juego3").append("genero", "accion").append("precio", 40.00).append("stock", 25);
+            Document juego4 = new Document("titulo", "juego4").append("genero", "accion").append("precio", 50.00).append("stock", 35);
+            Document juego5 = new Document("titulo", "juego5").append("genero", "accion").append("precio", 60.00).append("stock", 50);
 
-        System.out.println("\n ---Compras realizadas por un cliente--");
 
+        }
     }
 }
