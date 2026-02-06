@@ -43,5 +43,10 @@ public class MongoNativoApplication implements CommandLineRunner {
 
         repositorioClientes.save(new Cliente("juan", "correo1@gmail.com", LocalDate.now()));
         repositorioClientes.save(new Cliente("ana", "correo1@gmail.com",  LocalDate.now()));
+
+        System.out.println("--> Datos insertados <--");
+
+        System.out.println("\n ---Compras realizadas por un cliente--");
+
     }
 }
