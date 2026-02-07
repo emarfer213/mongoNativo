@@ -1,16 +1,24 @@
 package org.example.mongonativo;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
+import com.mongodb.client.model.Projections;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.time.LocalDate;
 import java.util.*;
 
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.lt;
+import static com.mongodb.client.model.Projections.exclude;
+import static com.mongodb.client.model.Projections.include;
+import static com.mongodb.client.model.Updates.inc;
+
 public class MongoNativoApplication {
     private static Scanner input = new Scanner(System.in);
+    static MongoCollection<Document> clientesCollection;
+    static MongoCollection<Document> juegosCollection;
+    static MongoCollection<Document> ventaCollection;
 
     public static void main(String[] args) {
 
@@ -18,11 +26,11 @@ public class MongoNativoApplication {
 
         try (MongoClient mongoClient = MongoClients.create(conectionString)) {
             MongoDatabase database = mongoClient.getDatabase("tienda_gaming");
-            MongoCollection<Document> clientesCollection = database.getCollection("clientes");
-            MongoCollection<Document> juegosCollection = database.getCollection("videjuegos");
-            MongoCollection<Document> ventaCollection = database.getCollection("ventas");
+            clientesCollection = database.getCollection("clientes");
+            juegosCollection = database.getCollection("videjuegos");
+            ventaCollection = database.getCollection("ventas");
 
-            bucleMenu(clientesCollection, juegosCollection, ventaCollection);
+            bucleMenu();
 
         }
     }
@@ -31,12 +39,14 @@ public class MongoNativoApplication {
         System.out.println("""
                 ---------MENU------------
                 1. Carga de Datos
-                2. Insertar Juego y Cliente
-                3. Salir
+                2. Realizar venta
+                3. Listar compras de un cliente
+                4. Listar los juegos en oferta
+                5. Salir
                 """);
     }
 
-    private static void bucleMenu(MongoCollection<Document> clientesCollection, MongoCollection<Document> juegosCollection, MongoCollection<Document> ventaCollection) {
+    private static void bucleMenu() {
         boolean exit = false;
         int opcion = -1;
 
@@ -53,9 +63,15 @@ public class MongoNativoApplication {
                     crearDatosPredefinidos(clientesCollection, juegosCollection, ventaCollection);
                     break;
                 case 2:
-                    System.out.printf("\n en proceso \n");
+                    procesarVenta("email1@gmail.com", "juego2");
                     break;
                 case 3:
+                    historialDeCliente("email1@gmail.com");
+                    break;
+                case 4:
+                    listaDeOfertas();
+                    break;
+                case 5:
                     exit = true;
                     break;
                 default:
@@ -108,21 +124,21 @@ public class MongoNativoApplication {
         List<Document> juegosValidos = new ArrayList<>();
 
         String[][] datosJuegos = {
-                {"juego1", "accion", "20", "15"},
-                {"juego2", "rpg", "30", "20"},
+                {"juego1", "accion", "15", "15"},
+                {"juego2", "rpg", "20", "1"},
                 {"juego3", "puzzles", "0", "25"},
                 {"juego4", "shooter", "50", "35"},
                 {"juego5", "accion", "60", "50"}
         };
 
-        for (String[] j : datosJuegos) {
+        for (String[] datos : datosJuegos) {
             try {
                 juegosValidos.add(
                         crearJuego(
-                                j[0],
-                                j[1],
-                                Double.parseDouble(j[2]),
-                                Integer.parseInt(j[3])
+                                datos[0],
+                                datos[1],
+                                Double.parseDouble(datos[2]),
+                                Integer.parseInt(datos[3])
                         )
                 );
             } catch (IllegalArgumentException e) {
@@ -154,5 +170,66 @@ public class MongoNativoApplication {
         if (!clientesValidos.isEmpty()) {
             clientesCollection.insertMany(clientesValidos);
         }
+    }
+
+    private static void procesarVenta(String emailCliente, String tituloJuego){
+        Document cliente = clientesCollection.find(eq("email", emailCliente)).first();
+        if (cliente == null){
+            System.out.println("cliente no encontrado");
+            return;
+        }
+
+        Document juego = juegosCollection.find(eq("titulo", tituloJuego)).first();
+        if (juego == null){
+            System.out.println("juego no encontrado");
+            return;
+        }
+
+        if (juego.getInteger("stock") <= 0){
+            System.out.println("stock del juego agotado");
+            return;
+        }
+
+        Document venta = new Document("fecha", LocalDate.now())
+                .append("cliente_id", cliente.getObjectId("_id"))
+                .append("juego_id", juego.getObjectId("_id"))
+                .append("titulo_snapshot", juego.getString("titulo"))
+                .append("precio_snapshot", juego.getDouble("precio"));
+
+        ventaCollection.insertOne(venta);
+
+        juegosCollection.updateOne(
+                eq("_id", juego.getObjectId("_id")),
+                inc("stock", -1)
+        );
+
+        System.out.println("Venta realizada correctamente");
+    }
+
+    private static void historialDeCliente(String emailCliente){
+        Document cliente = clientesCollection.find(eq("email", emailCliente)).first();
+        if (cliente == null){
+            System.out.println("cliente no encontrado");
+            return;
+        }
+
+        ObjectId clienteID = cliente.getObjectId("_id");
+
+        FindIterable<Document> compras = ventaCollection.find(
+                eq("cliente_id", clienteID)
+        );
+
+        System.out.println("Compras de " + emailCliente + ":");
+        for (Document v : compras) {
+            System.out.println("Titulo: " + v.getString("titulo_snapshot")
+                    + "\nPrecio :" + v.getDouble("precio_snapshot") + "€\n");
+        }
+    }
+
+    private static void listaDeOfertas(){
+        System.out.println("Los juegos que se encuentran en oferta son: ");
+        juegosCollection.find(lt("precio", 25.00))
+                .projection(Projections.fields(include("titulo", "precio"),exclude("_id")))
+                .forEach(doc -> System.out.println("\n" + doc.toJson()));
     }
 }
