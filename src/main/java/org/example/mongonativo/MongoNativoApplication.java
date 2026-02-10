@@ -84,6 +84,7 @@ public class MongoNativoApplication {
                     email = sc.nextLine();
 
                     try {
+                        //insertamos el cliente con los datos introducidos
                         clientesCollection.insertOne(crearCliente(nombre, email));
                     } catch (IllegalArgumentException e) {
                         System.out.println(e.getMessage());
@@ -103,6 +104,7 @@ public class MongoNativoApplication {
                     int stock = Integer.parseInt(sc.nextLine());
 
                     try {
+                        //insertamos el juego con los datos introducidos
                         juegosCollection.insertOne(crearJuego(titulo, genero, precio, stock));
                     } catch (IllegalArgumentException e) {
                         System.out.println(e.getMessage());
@@ -116,6 +118,7 @@ public class MongoNativoApplication {
                     System.out.println("Ingresa el email del cliente que quieres buscar");
                     email = sc.nextLine();
 
+                    //llamada al metodo que lista las compras hechas por un cliente
                     historialDeCliente(email);
                     break;
                 case 6:
