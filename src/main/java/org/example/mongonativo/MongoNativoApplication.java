@@ -96,6 +96,7 @@ public class MongoNativoApplication {
     /**
      * metodo el cual creara un objeto cliente con los datos introducidos por parametros
      * este comprobara primero si los datos son correctos, si no lo son enviara un mensaje de error
+     *
      * @param nombre
      * @param email
      * @return
@@ -116,6 +117,7 @@ public class MongoNativoApplication {
      * metodo el cual crea un objeto videojuego, recibiendo por parametros sus datos,
      * ademas comprueba que el precio ni el stock sean menores a 0,
      * si es igual o menor a 0 mandara una excepcion
+     *
      * @param titulo
      * @param genero
      * @param precio
@@ -125,7 +127,7 @@ public class MongoNativoApplication {
     private static Document crearJuego(String titulo, String genero, double precio, int stock) {
         if (precio <= 0 || stock <= 0) {
             throw new IllegalArgumentException(
-                    "El precio del producto o el valor del stock no puede ser menor o igua a 0"
+                    "El precio del producto y el valor del stock no puede ser menor o igual a 0"
             );
         }
 
@@ -147,7 +149,7 @@ public class MongoNativoApplication {
         String[][] datosJuegos = {
                 {"juego1", "accion", "15", "15"},
                 {"juego2", "rpg", "20", "1"},
-                {"juego3", "puzzles", "0", "25"},
+                {"juego3", "puzzles", "5", "25"},
                 {"juego4", "shooter", "50", "35"},
                 {"juego5", "accion", "60", "50"}
         };
@@ -182,16 +184,16 @@ public class MongoNativoApplication {
     private static void extraerClientesValidos() {
         List<Document> clientesValidos = new ArrayList<>();
 
-        List<String[]> datosClientes = Arrays.asList(
-                new String[]{"Ana", "email1@gmail.com"},
-                new String[]{"Paco", "email2gmail.com"}
-        );
+        String[][] datosClientes = {
+                {"Ana", "email1@gmail.com"},
+                {"Paco", "email2gmail.com"}
+        };
 
         for (String[] datos : datosClientes) {
             try {
                 clientesValidos.add(crearCliente(datos[0], datos[1]));
             } catch (IllegalArgumentException e) {
-                System.out.println("⚠ Cliente descartado: " + e.getMessage());
+                System.out.println("Cliente descartado: " + e.getMessage());
             }
         }
 
@@ -218,6 +220,7 @@ public class MongoNativoApplication {
      * metodo el cual realizara toda la logica de procesar la venta,
      * comprobara que no tenga datos incorrectos, utilizaremos dos objetos para guardar los datos
      * del juego y cliente que tengan los datos metidos por parametro
+     *
      * @param emailCliente
      * @param tituloJuego
      */
@@ -268,6 +271,7 @@ public class MongoNativoApplication {
      * metodo que usaremos para mostrar por pantalla todas las compras
      * que un cliente ha realizado, sacaremos la informacion del cliente que contenga
      * el email pasado por parametro e imprimiremos por pantalla el nombre del juego y el precio
+     *
      * @param emailCliente
      */
     private static void historialDeCliente(String emailCliente) {
@@ -305,6 +309,6 @@ public class MongoNativoApplication {
         System.out.println("Los juegos que se encuentran en oferta son: ");
         juegosCollection.find(lt("precio", 25.00))
                 .projection(Projections.fields(include("titulo", "precio"), exclude("_id")))
-                .forEach(doc -> System.out.println("\n" + doc.toJson()));
+                .forEach(doc -> System.out.println(doc.toJson()));
     }
 }
