@@ -15,10 +15,13 @@ import static com.mongodb.client.model.Projections.include;
 import static com.mongodb.client.model.Updates.inc;
 
 public class MongoNativoApplication {
-    private static Scanner input = new Scanner(System.in);
+    private static Scanner sc = new Scanner(System.in);
     static MongoCollection<Document> clientesCollection;
     static MongoCollection<Document> juegosCollection;
     static MongoCollection<Document> ventaCollection;
+    static boolean exit = false;
+
+    static String email = "";
 
     public static void main(String[] args) {
 
@@ -43,10 +46,12 @@ public class MongoNativoApplication {
         System.out.println("""
                 ---------MENU------------
                 1. Carga de Datos
-                2. Realizar venta
-                3. Listar compras de un cliente
-                4. Listar los juegos en oferta
-                5. Salir
+                2. Crear un nuevo cliente
+                3. Crear un nuevo juego
+                4. Realizar venta
+                5. Listar compras de un cliente
+                6. Listar los juegos en oferta
+                7. Salir
                 """);
     }
 
@@ -55,14 +60,14 @@ public class MongoNativoApplication {
      * y funcional hasta que la opcion de salir sea seleccionada
      */
     private static void bucleMenu() {
-        boolean exit = false;
+        exit = false;
         int opcion = -1;
 
         while (!exit) {
             menu();
 
             try {
-                opcion = Integer.parseInt(input.nextLine());
+                opcion = Integer.parseInt(sc.nextLine());
             } catch (InputMismatchException | NumberFormatException e) {
                 opcion = -1;
             }
@@ -72,18 +77,52 @@ public class MongoNativoApplication {
                     crearDatosPredefinidos();
                     break;
                 case 2:
-                    //llamada al metodo que realizara una venta
-                    procesarVenta("email1@gmail.com", "juego2");
+                    System.out.println("Ingresa el nombre del cliente a crear");
+                    String nombre = sc.nextLine();
+
+                    System.out.println("Ingresa el email del cliente a crear");
+                    email = sc.nextLine();
+
+                    try {
+                        clientesCollection.insertOne(crearCliente(nombre, email));
+                    } catch (IllegalArgumentException e) {
+                        System.out.println(e.getMessage());
+                    }
                     break;
                 case 3:
-                    //llamda al metodo que mostrara todas las compras que un cliente haya hecho
-                    historialDeCliente("email1@gmail.com");
+                    System.out.println("Ingresa el titulo del juego a crear");
+                    String titulo = sc.nextLine();
+
+                    System.out.println("Ingresa el genero del juego a crear");
+                    String genero = sc.nextLine();
+
+                    System.out.println("Ingresa el precio del juego a crear");
+                    Double precio = Double.parseDouble(sc.nextLine());
+
+                    System.out.println("Ingresa el stock del juego a crear");
+                    int stock = Integer.parseInt(sc.nextLine());
+
+                    try {
+                        juegosCollection.insertOne(crearJuego(titulo, genero, precio, stock));
+                    } catch (IllegalArgumentException e) {
+                        System.out.println(e.getMessage());
+                    }
                     break;
                 case 4:
+                    //llama al metodo que procesara toda la operacion de la venta
+                    procesarVenta();
+                    break;
+                case 5:
+                    System.out.println("Ingresa el email del cliente que quieres buscar");
+                    email = sc.nextLine();
+
+                    historialDeCliente(email);
+                    break;
+                case 6:
                     //llamda al metodo que mostrar por pantalla todos los juegos en oferta
                     listaDeOfertas();
                     break;
-                case 5:
+                case 7:
                     exit = true;
                     break;
                 default:
@@ -108,6 +147,12 @@ public class MongoNativoApplication {
         if (precio <= 0 || stock <= 0) {
             throw new IllegalArgumentException(
                     "El precio del producto y el valor del stock no puede ser menor o igual a 0"
+            );
+        }
+
+        if (juegosCollection.find(eq("titulo", titulo)).first() != null) {
+            throw new IllegalArgumentException(
+                    "Este titulo ya existe"
             );
         }
 
@@ -170,6 +215,10 @@ public class MongoNativoApplication {
             );
         }
 
+        if (clientesCollection.find(eq("email", email)).first()  != null) {
+            throw new IllegalArgumentException("Email ya existente");
+        }
+
         return new Document("nombre", nombre)
                 .append("email", email)
                 .append("fecha_registro", LocalDate.now());
@@ -220,21 +269,26 @@ public class MongoNativoApplication {
      * metodo el cual realizara toda la logica de procesar la venta,
      * comprobara que no tenga datos incorrectos, utilizaremos dos objetos para guardar los datos
      * del juego y cliente que tengan los datos metidos por parametro
-     *
-     * @param emailCliente
-     * @param tituloJuego
      */
-    private static void procesarVenta(String emailCliente, String tituloJuego) {
+    private static void procesarVenta() {
 
-        //crearemos dos objetos que guarden los datos del cliente y videojuego correspondiente
+        System.out.println("Ingresa el email del cliente que realizara la compra");
+        String emailCliente = sc.nextLine();
+
+        //buscamos el cliente relacionado con el email
         Document cliente = clientesCollection.find(eq("email", emailCliente)).first();
-        Document juego = juegosCollection.find(eq("titulo", tituloJuego)).first();
 
         //comprobamos que el cliente exista
         if (cliente == null) {
             System.out.println("cliente no encontrado");
             return;
         }
+
+        System.out.println("Ingresa el nombre del juego que comprara");
+        String tituloJuego = sc.nextLine();
+
+        //buscamos el juego que tenga el nombre introducido
+        Document juego = juegosCollection.find(eq("titulo", tituloJuego)).first();
 
         //comprobamos que el juego existe
         if (juego == null) {
@@ -264,7 +318,7 @@ public class MongoNativoApplication {
                 inc("stock", -1)
         );
 
-        System.out.println("Venta realizada correctamente");
+        System.out.println("\nVenta realizada correctamente");
     }
 
     /**
