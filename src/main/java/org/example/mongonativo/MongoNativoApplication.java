@@ -94,26 +94,6 @@ public class MongoNativoApplication {
     }
 
     /**
-     * metodo el cual creara un objeto cliente con los datos introducidos por parametros
-     * este comprobara primero si los datos son correctos, si no lo son enviara un mensaje de error
-     *
-     * @param nombre
-     * @param email
-     * @return
-     */
-    private static Document crearCliente(String nombre, String email) {
-        if (email == null || !email.contains("@")) {
-            throw new IllegalArgumentException(
-                    "Email inválido: " + email
-            );
-        }
-
-        return new Document("nombre", nombre)
-                .append("email", email)
-                .append("fecha_registro", LocalDate.now());
-    }
-
-    /**
      * metodo el cual crea un objeto videojuego, recibiendo por parametros sus datos,
      * ademas comprueba que el precio ni el stock sean menores a 0,
      * si es igual o menor a 0 mandara una excepcion
@@ -173,6 +153,26 @@ public class MongoNativoApplication {
         if (!juegosValidos.isEmpty()) {
             juegosCollection.insertMany(juegosValidos);
         }
+    }
+
+    /**
+     * metodo el cual creara un objeto cliente con los datos introducidos por parametros
+     * este comprobara primero si los datos son correctos, si no lo son enviara un mensaje de error
+     *
+     * @param nombre
+     * @param email
+     * @return
+     */
+    private static Document crearCliente(String nombre, String email) {
+        if (email == null || !email.contains("@")) {
+            throw new IllegalArgumentException(
+                    "Email inválido: " + email
+            );
+        }
+
+        return new Document("nombre", nombre)
+                .append("email", email)
+                .append("fecha_registro", LocalDate.now());
     }
 
     /**
